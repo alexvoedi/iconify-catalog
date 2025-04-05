@@ -5,13 +5,14 @@ import { darkTheme } from 'naive-ui'
 <template>
   <n-config-provider :theme="darkTheme">
     <n-message-provider placement="bottom">
-      <router-view />
+      <router-view class="container mx-auto" />
     </n-message-provider>
   </n-config-provider>
 </template>
 
 <style>
-html, body {
+html {
   background-color: rgb(16, 16, 20);
+  overflow-y: scroll;
 }
 </style>

@@ -1,46 +1,33 @@
+import type { Collection, CollectionMap } from '@/types/Collection'
+import type { CollectionCategories } from '@/types/CollectionCategories'
+import type { Collections } from '@/types/Collections'
+import type { IconMap } from '@/types/IconMap'
 import type { RemovableRef } from '@vueuse/core'
+import { createRankedGroups } from '@/utils/createRankedGroups'
 import ky from 'ky'
 import { defineStore } from 'pinia'
 
-const baseUrl = import.meta.env.VITE_BASE_URL
-
-type Collections = Record<string, {
-  name: string
-  author: {
-    name: string
-  }
-  licence: {
-    title: string
-  }
-  total: number
-}>
-
-interface Collection {
-  prefix: string
-  total: number
-  title: string
-  uncategorized: string[]
-}
-
-type CollectionMap = Record<string, Collection>
-
-type IconMap = Record<string, Record<string, string>>
-
 interface BaseStore {
+  sources: RemovableRef<Record<string, string>>
+  source: RemovableRef<string>
   collections: RemovableRef<Collections>
   collectionMap: RemovableRef<CollectionMap>
   iconMap: RemovableRef<IconMap>
+  collectionCategories: RemovableRef<CollectionCategories>
 }
 
 export const useBaseStore = defineStore('base', {
   state: (): BaseStore => ({
+    sources: useLocalStorage('sources', {}),
+    source: useLocalStorage('source', ''),
     collections: useLocalStorage('collections', {}),
     collectionMap: useLocalStorage('collectionMap', {}),
     iconMap: useLocalStorage('iconMap', {}),
+    collectionCategories: useLocalStorage('collectionCategories', {}),
   }),
   actions: {
     async fetchCollections() {
-      const url = new URL('/collections', baseUrl)
+      const url = new URL('/collections', this.sources[this.source])
 
       const response = await ky.get(url).json<Collections>()
 
@@ -48,7 +35,7 @@ export const useBaseStore = defineStore('base', {
     },
 
     async fetchCollection(prefix: string) {
-      const url = new URL(`/collection`, baseUrl)
+      const url = new URL(`/collection`, this.sources[this.source])
 
       url.searchParams.set('prefix', prefix)
 
@@ -58,7 +45,7 @@ export const useBaseStore = defineStore('base', {
     },
 
     async fetchIcon(prefix: string, icon: string) {
-      const url = new URL(`/${prefix}/${icon}.svg?color=white`, baseUrl)
+      const url = new URL(`/${prefix}/${icon}.svg?color=white`, this.sources[this.source])
 
       const response = await ky.get(url).text()
 
@@ -67,6 +54,12 @@ export const useBaseStore = defineStore('base', {
       }
 
       this.iconMap[prefix][icon] = response
+    },
+
+    calculateCategories(prefix: string) {
+      const flatIconList = this.collectionMap[prefix].uncategorized
+
+      this.collectionCategories[prefix] = createRankedGroups(flatIconList)
     },
   },
   getters: {},
