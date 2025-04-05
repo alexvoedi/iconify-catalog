@@ -11,6 +11,7 @@ interface BaseStore {
   sources: RemovableRef<Record<string, string>>
   source: RemovableRef<string>
   collections: RemovableRef<Collections>
+  collection: RemovableRef<string>
   collectionMap: RemovableRef<CollectionMap>
   iconMap: RemovableRef<IconMap>
   collectionCategories: RemovableRef<CollectionCategories>
@@ -21,6 +22,7 @@ export const useBaseStore = defineStore('base', {
     sources: useLocalStorage('sources', {}),
     source: useLocalStorage('source', ''),
     collections: useLocalStorage('collections', {}),
+    collection: useLocalStorage('collection', ''),
     collectionMap: useLocalStorage('collectionMap', {}),
     iconMap: useLocalStorage('iconMap', {}),
     collectionCategories: useLocalStorage('collectionCategories', {}),

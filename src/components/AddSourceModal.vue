@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Collections } from '@/types/Collections'
 import ky from 'ky'
 
 const emit = defineEmits<{
@@ -14,8 +15,10 @@ const validSource = ref(false)
 
 const newSource = ref({
   name: '',
-  url: '',
+  url: 'https://',
 })
+
+const availableCollections = ref<Collections>({})
 
 watchDebounced(
   () => newSource.value,
@@ -30,6 +33,8 @@ watchDebounced(
       }
 
       validSource.value = true
+
+      await fetchAvailableCollections()
     }
     catch {
       validSource.value = false
@@ -44,16 +49,36 @@ function addSource() {
     show.value = false
   }
 }
+
+async function fetchAvailableCollections() {
+  if (!newSource.value.url) {
+    return
+  }
+
+  try {
+    const url = new URL('/collections', newSource.value.url)
+    const response = await ky.get(url).json<Collections>()
+
+    availableCollections.value = response
+  }
+  catch (e) {
+    console.error('Error fetching collections:', e)
+  }
+}
 </script>
 
 <template>
-  <n-button secondary size="large" @click="show = true">
-    <template #icon>
-      <n-icon class="ico-mdi-plus" />
+  <n-tooltip>
+    <template #trigger>
+      <n-button secondary @click="show = true">
+        <template #icon>
+          <n-icon class="ico-mdi-plus" />
+        </template>
+      </n-button>
     </template>
 
-    <span>Add Icon Source</span>
-  </n-button>
+    <div>Add Icon Source</div>
+  </n-tooltip>
 
   <n-modal v-model:show="show" closable>
     <n-card
@@ -73,6 +98,16 @@ function addSource() {
 
         <n-form-item label="URL">
           <n-input v-model:value="newSource.url" placeholder="Enter the URL of the icon set" type="text" class="font-mono" />
+        </n-form-item>
+
+        <n-form-item v-if="Object.keys(availableCollections).length > 0" label="Collections">
+          <n-scrollbar class=" max-h-40vh overflow-y-auto w-full" trigger="none">
+            <div class="flex flex-col gap-2">
+              <n-checkbox v-for="([prefix, data]) in Object.entries(availableCollections)" :key="prefix">
+                {{ data.name }}
+              </n-checkbox>
+            </div>
+          </n-scrollbar>
         </n-form-item>
       </n-form>
 

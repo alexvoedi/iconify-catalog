@@ -22,7 +22,12 @@ const fuse = new Fuse<string>(
 )
 
 watch(() => props.collection, async () => {
-  await Promise.all(collectionData.value.uncategorized.map(async (icon) => {
+  const iconArray = collectionData.value?.uncategorized
+
+  if (!iconArray)
+    return
+
+  await Promise.all(iconArray.map(async (icon) => {
     await baseStore.fetchIcon(collectionData.value.prefix, icon)
 
     fuse.add(icon)
