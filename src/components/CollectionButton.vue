@@ -1,31 +1,59 @@
 <script setup lang="ts">
-import { useBaseStore } from '@/store/base'
+import { useCollectionStore } from '@/store/collection'
 
 const props = defineProps<{
-  collection: string
-  active?: boolean
+  collection: {
+    id: string
+    name: string
+    author: {
+      name: string
+    }
+    license: {
+      title: string
+    }
+    total: number
+  }
 }>()
 
-const baseStore = useBaseStore()
+const collectionStore = useCollectionStore()
 
-const collectionData = computed(() => baseStore.collectionMap[props.collection])
+const collection = computed(() => {
+  try {
+    return collectionStore.getCollectionByPrefix(props.collection.id)
+  }
+  catch {
+    return null
+  }
+})
 
-const variant = computed(() => props.active ? 'primary' : 'default')
+const variant = computed(() =>
+  collectionStore.selectedCollectionId === collection.value?.id
+    ? 'primary'
+    : 'default')
+
+function selectCollection() {
+  if (!collection.value)
+    return
+
+  collectionStore.selectedCollectionId = collectionStore.selectedCollectionId === collection.value.id
+    ? ''
+    : collection.value.id
+}
 </script>
 
 <template>
   <button
-    v-if="collectionData"
+    v-if="collection"
     class="w-full px-4 h-20 flex flex-col items-start justify-center gap-2 transition"
     hover="bg-true-gray-900"
-    @click="baseStore.collection = baseStore.collection === collection ? '' : collection"
+    @click="selectCollection"
   >
     <n-text :type="variant" class="text-xl">
-      {{ collectionData.title }}
+      {{ collection.name }}
     </n-text>
 
     <n-text :type="variant" class="opacity-75 text-xs">
-      {{ collectionData.total }} icons
+      {{ collection.total }} icons
     </n-text>
   </button>
 </template>

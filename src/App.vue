@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { darkTheme } from 'naive-ui'
+import { useCollectionStore } from './store/collection'
+
+const collectionStore = useCollectionStore()
 </script>
 
 <template>
@@ -10,7 +13,8 @@ import { darkTheme } from 'naive-ui'
         <n-layout-content>
           <n-scrollbar>
             <div class="container mx-auto p-8">
-              <router-view />
+              <Collection v-if="collectionStore.selectedCollection" />
+              <n-alert v-else show-icon type="info" title="Please select a collection" />
             </div>
           </n-scrollbar>
         </n-layout-content>

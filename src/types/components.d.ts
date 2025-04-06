@@ -13,6 +13,7 @@ declare module 'vue' {
     Collection: typeof import('./../components/Collection.vue')['default']
     CollectionButton: typeof import('./../components/CollectionButton.vue')['default']
     Icon: typeof import('./../components/Icon.vue')['default']
+    NAlert: typeof import('naive-ui')['NAlert']
     NButton: typeof import('naive-ui')['NButton']
     NButtonGroup: typeof import('naive-ui')['NButtonGroup']
     NCard: typeof import('naive-ui')['NCard']
@@ -39,6 +40,7 @@ declare module 'vue' {
     NTooltip: typeof import('naive-ui')['NTooltip']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SourceSelector: typeof import('./../components/SourceSelector.vue')['default']
     TheNav: typeof import('./../components/TheNav.vue')['default']
   }
 }

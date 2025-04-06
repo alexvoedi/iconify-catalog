@@ -31,15 +31,20 @@
   "dependencies": {
     "@vueuse/core": "^13.0.0",
     "@vueuse/head": "^2.0.0",
+    "@vueuse/integrations": "^13.0.0",
     "fuse.js": "^7.1.0",
+    "idb-keyval": "^6",
     "ky": "^1.8.0",
+    "lodash": "^4.17.21",
+    "nanoid": "^5.1.5",
     "pinia": "^3.0.1",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue": "^3.5.13"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.11.0",
     "@iconify-json/mdi": "^1.2.3",
+    "@iconify/types": "^2.0.0",
+    "@iconify/vue": "^4.3.0",
     "@types/node": "^22.14.0",
     "@unocss/preset-attributify": "^66.0.0",
     "@unocss/preset-icons": "^66.0.0",

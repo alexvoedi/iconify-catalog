@@ -1,38 +1,40 @@
 <script setup lang="ts">
-import type { Collections } from '@/types/Collections'
+import type { Source } from '@/store/source'
+import type { Response } from '@/types/Response'
+import { useSourceStore } from '@/store/source'
+import { toArray } from '@/utils/toArray'
 import ky from 'ky'
+import { useMessage } from 'naive-ui'
 
-const emit = defineEmits<{
-  addSource: [{
-    name: string
-    url: string
-  }]
-}>()
+const sourceStore = useSourceStore()
+const message = useMessage()
 
 const show = ref(false)
-
 const validSource = ref(false)
 
-const newSource = ref({
+const newSource = ref<Source>({
   name: '',
   url: 'https://',
+  collections: [],
 })
 
-const availableCollections = ref<Collections>({})
+const availableCollections = ref<Array<{
+  id: string
+  name: string
+  author: {
+    name: string
+  }
+  license: {
+    title: string
+  }
+  total: number
+}>>([])
 
 watchDebounced(
   () => newSource.value,
   async (newValue) => {
     try {
-      const url = new URL('/collections', newValue.url)
-
-      const response = await ky.get(url)
-
-      if (!response.ok) {
-        throw new Error('Invalid URL')
-      }
-
-      validSource.value = true
+      validSource.value = await sourceStore.isValidSourceUrl(newValue.url)
 
       await fetchAvailableCollections()
     }
@@ -43,23 +45,33 @@ watchDebounced(
   { debounce: 1_000, deep: true },
 )
 
-function addSource() {
-  if (validSource.value) {
-    emit('addSource', newSource.value)
-    show.value = false
-  }
+async function addSource() {
+  if (!validSource.value)
+    message.error('Invalid source URL')
+
+  const id = await sourceStore.addSource(newSource.value)
+
+  show.value = false
+
+  sourceStore.selectedSourceId = id
 }
 
 async function fetchAvailableCollections() {
-  if (!newSource.value.url) {
-    return
-  }
+  if (!validSource.value)
+    return false
 
   try {
-    const url = new URL('/collections', newSource.value.url)
-    const response = await ky.get(url).json<Collections>()
+    const fullUrl = new URL('/collections', newSource.value.url)
 
-    availableCollections.value = response
+    const response = await ky.get(fullUrl)
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch source collection')
+    }
+
+    const data = await response.json<Response['/collections']>()
+
+    availableCollections.value = toArray(data)
   }
   catch (e) {
     console.error('Error fetching collections:', e)
@@ -100,11 +112,23 @@ async function fetchAvailableCollections() {
           <n-input v-model:value="newSource.url" placeholder="Enter the URL of the icon set" type="text" class="font-mono" />
         </n-form-item>
 
-        <n-form-item v-if="Object.keys(availableCollections).length > 0" label="Collections">
+        <n-form-item v-if="availableCollections.length > 0" label="Collections">
           <n-scrollbar class=" max-h-40vh overflow-y-auto w-full" trigger="none">
             <div class="flex flex-col gap-2">
-              <n-checkbox v-for="([prefix, data]) in Object.entries(availableCollections)" :key="prefix">
-                {{ data.name }}
+              <n-checkbox
+                v-for="collection in availableCollections"
+                :key="collection.id"
+                :checked="newSource.collections.some((selectedCollection) => selectedCollection.id === collection.id)"
+                @update:checked="(checked) => {
+                  if (checked) {
+                    newSource.collections.push(collection)
+                  }
+                  else {
+                    newSource.collections = newSource.collections.filter((selectedCollection) => selectedCollection.id !== collection.id)
+                  }
+                }"
+              >
+                {{ collection.name }}
               </n-checkbox>
             </div>
           </n-scrollbar>

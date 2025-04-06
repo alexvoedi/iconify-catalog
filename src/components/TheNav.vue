@@ -1,19 +1,7 @@
 <script setup lang="ts">
-import { useBaseStore } from '@/store/base'
+import { useSourceStore } from '@/store/source'
 
-const baseStore = useBaseStore()
-
-const availableSources = computed(() => Object.entries(baseStore.sources).map(([name, url]) => ({
-  label: name,
-  value: url,
-})))
-
-const availableCollections = computed(() => Object.entries(baseStore.collections).map(([key]) => {
-  return {
-    label: key,
-    value: key,
-  }
-}))
+const sourceStore = useSourceStore()
 </script>
 
 <template>
@@ -26,26 +14,15 @@ const availableCollections = computed(() => Object.entries(baseStore.collections
 
       <n-divider class="m-0!" />
 
-      <div class="p-4">
-        <n-input-group>
-          <n-select v-model:value="baseStore.source" :options="availableSources" />
-          <AddSourceModal
-            @add-source="(source) => {
-              baseStore.sources[source.name] = source.url
-              baseStore.source = source.name
-            }"
-          />
-        </n-input-group>
-      </div>
+      <SourceSelector />
 
       <n-divider class="m-0!" />
 
       <n-scrollbar>
-        <div class="flex-grow">
-          <template v-for="availableCollection in availableCollections" :key="availableCollection.value">
+        <div v-if="sourceStore.selectedSource" class="flex-grow">
+          <template v-for="collection in sourceStore.selectedSource.collections" :key="collection.id">
             <CollectionButton
-              :collection="availableCollection.value"
-              :active="availableCollection.value === baseStore.collection"
+              :collection="collection"
             />
             <n-divider class="m-0!" />
           </template>

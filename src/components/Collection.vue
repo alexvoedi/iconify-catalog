@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { useBaseStore } from '@/store/base'
+import { useCollectionStore } from '@/store/collection'
 import { createRankedGroups } from '@/utils/createRankedGroups'
+import { toArray } from '@/utils/toArray'
+import { addAPIProvider } from '@iconify/vue'
 import Fuse from 'fuse.js'
 
-const props = defineProps<{
-  collection: string
-}>()
+const collectionStore = useCollectionStore()
 
-const baseStore = useBaseStore()
-
-const collectionData = computed(() => baseStore.collectionMap[props.collection])
-const icons = computed(() => baseStore.iconMap[props.collection] ?? {})
+const icons = computed(() => collectionStore.getIcons(collectionStore.selectedCollectionId))
 
 const fuse = new Fuse<string>(
-  Object.keys(icons.value),
+  icons.value,
   {
     keys: ['name'],
     threshold: 0.3,
@@ -21,52 +18,38 @@ const fuse = new Fuse<string>(
   },
 )
 
-watch(() => props.collection, async () => {
-  const iconArray = collectionData.value?.uncategorized
-
-  if (!iconArray)
-    return
-
-  await Promise.all(iconArray.map(async (icon) => {
-    await baseStore.fetchIcon(collectionData.value.prefix, icon)
-
-    fuse.add(icon)
-  }))
-
-  baseStore.calculateCategories(collectionData.value.prefix)
-}, {
-  immediate: true,
-})
-
 const search = ref('')
 const categories = ref<string[]>([])
 
 const filteredIcons = computed(() => {
-  const iconMap: Record<string, string> = {}
-
-  if (search.value) {
-    fuse.search(search.value).forEach(({ item: name }) => {
-      iconMap[name] = icons.value[name]
-    })
-  }
-  else {
-    Object.keys(icons.value).forEach((name) => {
-      iconMap[name] = icons.value[name]
-    })
-  }
+  let filteredIcons = [...icons.value]
 
   if (categories.value.length > 0) {
-    Object.keys(iconMap).forEach((name) => {
-      if (!categories.value.some(category => name.includes(category))) {
-        delete iconMap[name]
-      }
+    filteredIcons = filteredIcons.filter((name) => {
+      return categories.value.some(category => name.includes(category))
     })
   }
 
-  return iconMap
+  if (search.value) {
+    const result = fuse.search(search.value)
+
+    filteredIcons = filteredIcons.filter((name) => {
+      return result.some(item => item.item === name)
+    })
+  }
+
+  return filteredIcons
 })
 
-const availableCategories = computed(() => createRankedGroups(Object.keys(icons.value)))
+const availableCategories = computed(() => createRankedGroups(icons.value))
+
+onMounted(() => {
+  toArray(collectionStore.collections).forEach((collection) => {
+    addAPIProvider(collection.provider, {
+      resources: ['https://icons.ipen.eon.com'],
+    })
+  })
+})
 </script>
 
 <template>
@@ -103,13 +86,14 @@ const availableCategories = computed(() => createRankedGroups(Object.keys(icons.
     </div>
 
     <div
+      v-if="collectionStore.selectedCollection"
       class="icon-grid items-center gap-3 justify-center items-center"
     >
       <div
-        v-for="([name, svg]) in Object.entries(filteredIcons)" :key="name"
+        v-for="icon in filteredIcons" :key="icon"
         class="flex flex-grow items-center gap-2 max-w-400px"
       >
-        <Icon :prefix="collectionData.prefix" :name="name" :svg="svg" />
+        <Icon :provider="collectionStore.selectedCollection.provider" :prefix="collectionStore.selectedCollection.prefix" :name="icon" />
       </div>
     </div>
   </div>
